@@ -61,3 +61,15 @@ int sys_sdk_proc_prx_unload(char* process_name, int prx_handle) {
 
     return args.res;
 }
+
+
+void sys_proc_write(void *Dst, const void *Data, size_t Length)
+{
+    struct proc_rw process_rw_data;
+    (void)bzero(&process_rw_data, sizeof(process_rw_data));
+    process_rw_data.address = (uint64_t)Dst;
+    process_rw_data.data = (void *)Data;
+    process_rw_data.length = (size_t)Length;
+    process_rw_data.write_flags = 1;
+    (void)sys_sdk_proc_rw(&process_rw_data);
+}

@@ -50,6 +50,8 @@ extern "C" {
 #define ORBIS_SYSMODULE_INTERNAL_PRECOMPILED_SHADERS 0x80000064
 */
 
+void sys_proc_write(void *Dst, const void *Data, size_t Length);
+
 #ifdef __cplusplus
 }
 #endif

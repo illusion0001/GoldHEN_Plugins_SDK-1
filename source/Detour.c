@@ -9,6 +9,8 @@
  * - SiSTRo <https://github.com/SiSTR0>
  */
 
+#include <stdint.h>
+
 #include "Common.h"
 #include "HDE64.h"
 
@@ -44,8 +46,7 @@ void Detour_WriteJump64(Detour *This, void *Address, uint64_t Destination) {
     // Write the address of our hook to the instruction.
     *(uint64_t * )(This->JumpInstructions64 + 6) = Destination;
 
-    sceKernelMprotect((void *) Address, sizeof(This->JumpInstructions64), VM_PROT_ALL);
-    memcpy(Address, This->JumpInstructions64, sizeof(This->JumpInstructions64));
+    sys_proc_write(Address, This->JumpInstructions64, sizeof(This->JumpInstructions64));
 }
 
 void Detour_WriteJump32(Detour *This, void *Address, uint64_t Destination) {
@@ -53,9 +54,8 @@ void Detour_WriteJump32(Detour *This, void *Address, uint64_t Destination) {
 
     // Write the address of our hook to the instruction.
     *(uint32_t * )(This->JumpInstructions32 + 1) = Offset;
-
-    sceKernelMprotect((void *) Address, sizeof(This->JumpInstructions32), VM_PROT_ALL);
-    memcpy(Address, This->JumpInstructions32, sizeof(This->JumpInstructions32));
+    klog("Address 0x%p -> Destination 0x%lx\n",Address, Destination );
+    sys_proc_write(Address, This->JumpInstructions32, sizeof(This->JumpInstructions32));
 }
 
 uint64_t Detour_GetJumpAddress64(Detour *This, void *Address) {
@@ -108,9 +108,6 @@ void *Detour_DetourFunction64(Detour *This, uint64_t FunctionPtr, void *HookPtr)
     This->FunctionPtr = (void *) FunctionPtr;
     This->HookPtr = HookPtr;
 
-    // Set protection.
-    sceKernelMprotect((void *) FunctionPtr, InstructionSize, VM_PROT_ALL);
-
     //Allocate Executable memory for stub and write instructions to stub and a jump back to original execution.
     This->StubSize = (InstructionSize + sizeof(This->JumpInstructions64));
     res = sceKernelMmap(0, This->StubSize, VM_PROT_ALL, 0x1000 | 0x2, -1, 0, &This->StubPtr);
@@ -122,11 +119,17 @@ void *Detour_DetourFunction64(Detour *This, uint64_t FunctionPtr, void *HookPtr)
         return 0;
     }
 
-    memcpy(This->StubPtr, (void *) FunctionPtr, InstructionSize);
+    sys_proc_write(This->StubPtr, (void *) FunctionPtr, InstructionSize);
     Detour_WriteJump64(This, (void *) ((uint64_t) This->StubPtr + InstructionSize), (uint64_t)(FunctionPtr + InstructionSize));
 
     // Write jump from function to hook.
-    memset((void *) FunctionPtr, 0x90, InstructionSize);
+    void* nop_arr = malloc(InstructionSize);
+    if (nop_arr)
+    {
+        memset((void *) nop_arr, 0x90, InstructionSize);
+        sys_proc_write((void *) FunctionPtr, nop_arr, InstructionSize);
+        free(nop_arr);
+    }
     Detour_WriteJump64(This, (void *) FunctionPtr, (uint64_t) This->TrampolinePtr);
 
 #if (DEBUG) == 1
@@ -181,9 +184,6 @@ void *Detour_DetourFunction32(Detour *This, uint64_t FunctionPtr, void *HookPtr)
     This->FunctionPtr = (void *)FunctionPtr;
     This->HookPtr = HookPtr;
 
-    // Set protection.
-    sceKernelMprotect((void *) FunctionPtr, InstructionSize, VM_PROT_ALL);
-
     //Allocate Executable memory for stub and write instructions to stub and a jump back to original execution.
     This->StubSize = (InstructionSize + sizeof(This->JumpInstructions64));
 
@@ -196,11 +196,17 @@ void *Detour_DetourFunction32(Detour *This, uint64_t FunctionPtr, void *HookPtr)
         return 0;
     }
 
-    memcpy(This->StubPtr, (void *) FunctionPtr, InstructionSize);
+    sys_proc_write(This->StubPtr, (void *) FunctionPtr, InstructionSize);
     Detour_WriteJump64(This, (void *) ((uint64_t)This->StubPtr + InstructionSize), (uint64_t)(FunctionPtr + InstructionSize));
 
     // Write jump from function to hook.
-    memset((void *) FunctionPtr, 0x90, InstructionSize);
+    void* nop_arr = malloc(InstructionSize);
+    if (nop_arr)
+    {
+        memset((void *) nop_arr, 0x90, InstructionSize);
+        sys_proc_write((void *) FunctionPtr, nop_arr, InstructionSize);
+        free(nop_arr);
+    }
     Detour_WriteJump32(This, (void *) FunctionPtr, (uint64_t) This->TrampolinePtr);
 
 #if (DEBUG) == 1
@@ -231,8 +237,7 @@ void Detour_RestoreFunction(Detour *This) {
         }
 
         if (RestorePtr != 0 && RestoreSize != 0) {
-            sceKernelMprotect((void *) RestorePtr, RestoreSize, VM_PROT_ALL);
-            memcpy((void *) RestorePtr, This->StubPtr, RestoreSize);
+            sys_proc_write((void *) RestorePtr, This->StubPtr, RestoreSize);
 
 #if (DEBUG) == 1
             klog("[Detour] %s: (%p) has been Restored Successfully!\n", __FUNCTION__, RestorePtr);
