@@ -7,12 +7,8 @@ TARGETCRT    := build/crtprx.o
 # Libraries linked into the ELF.
 LIBS         := -lSceLibcInternal -lkernel -lSceSysmodule
 
-LOG_TYPE = -D__USE_KLOG__
+LOG_TYPE = -D__USE_PRINTF__
 DEBUG_FLAGS = -DDEBUG=0
-
-ifeq ($(PRINTF),1)
-    LOG_TYPE = -D__USE_PRINTF__
-endif
 
 ifeq ($(DEBUGFLAGS),1)
     DEBUG_FLAGS = -DDEBUG=1
