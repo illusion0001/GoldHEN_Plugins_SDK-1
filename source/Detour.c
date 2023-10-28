@@ -46,6 +46,8 @@ void Detour_WriteJump64(Detour *This, void *Address, uint64_t Destination) {
     // Write the address of our hook to the instruction.
     *(uint64_t * )(This->JumpInstructions64 + 6) = Destination;
 
+    klog("[Detour] %s: Address 0x%p -> Destination 0x%lx\n" , __FUNCTION__, Address, Destination);
+
     sys_proc_write(Address, This->JumpInstructions64, sizeof(This->JumpInstructions64));
 }
 
@@ -54,7 +56,7 @@ void Detour_WriteJump32(Detour *This, void *Address, uint64_t Destination) {
 
     // Write the address of our hook to the instruction.
     *(uint32_t * )(This->JumpInstructions32 + 1) = Offset;
-    klog("Address 0x%p -> Destination 0x%lx\n",Address, Destination );
+    klog("[Detour] %s: Address 0x%p -> Destination 0x%lx\n" , __FUNCTION__, Address, Destination);
     sys_proc_write(Address, This->JumpInstructions32, sizeof(This->JumpInstructions32));
 }
 
