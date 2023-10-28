@@ -26,10 +26,10 @@ void Detour_Construct(Detour *This, DetourMode Mode);
 void Detour_Destroy(Detour *This);
 
 size_t Detour_GetInstructionSize(Detour *This, uint64_t Address, size_t MinSize) {
-    size_t InstructionSize = 0;
 
     if (!Address) return 0;
 
+    size_t InstructionSize = 0;
     while (InstructionSize < MinSize) {
         hde64s hs;
         uint32_t temp = hde64_disasm((void *) (Address + InstructionSize), &hs);
@@ -46,7 +46,9 @@ void Detour_WriteJump64(Detour *This, void *Address, uint64_t Destination) {
     // Write the address of our hook to the instruction.
     *(uint64_t * )(This->JumpInstructions64 + 6) = Destination;
 
+#if (DEBUG) == 1
     klog("[Detour] %s: Address 0x%p -> Destination 0x%lx\n" , __FUNCTION__, Address, Destination);
+#endif
 
     sys_proc_write(Address, This->JumpInstructions64, sizeof(This->JumpInstructions64));
 }
@@ -56,7 +58,9 @@ void Detour_WriteJump32(Detour *This, void *Address, uint64_t Destination) {
 
     // Write the address of our hook to the instruction.
     *(uint32_t * )(This->JumpInstructions32 + 1) = Offset;
+#if (DEBUG) == 1
     klog("[Detour] %s: Address 0x%p -> Destination 0x%lx\n" , __FUNCTION__, Address, Destination);
+#endif
     sys_proc_write(Address, This->JumpInstructions32, sizeof(This->JumpInstructions32));
 }
 
