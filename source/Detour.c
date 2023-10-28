@@ -123,12 +123,10 @@ void *Detour_DetourFunction64(Detour *This, uint64_t FunctionPtr, void *HookPtr)
     Detour_WriteJump64(This, (void *) ((uint64_t) This->StubPtr + InstructionSize), (uint64_t)(FunctionPtr + InstructionSize));
 
     // Write jump from function to hook.
-    void* nop_arr = malloc(InstructionSize);
-    if (nop_arr)
+    for (uint32_t i = 0; i < InstructionSize; i++)
     {
-        memset((void *) nop_arr, 0x90, InstructionSize);
-        sys_proc_write((void *) FunctionPtr, nop_arr, InstructionSize);
-        free(nop_arr);
+        uint8_t nop_ = 0x90;
+        sys_proc_write((void *) (FunctionPtr + i), &nop_, sizeof(nop_));
     }
     Detour_WriteJump64(This, (void *) FunctionPtr, (uint64_t) This->TrampolinePtr);
 
@@ -200,12 +198,10 @@ void *Detour_DetourFunction32(Detour *This, uint64_t FunctionPtr, void *HookPtr)
     Detour_WriteJump64(This, (void *) ((uint64_t)This->StubPtr + InstructionSize), (uint64_t)(FunctionPtr + InstructionSize));
 
     // Write jump from function to hook.
-    void* nop_arr = malloc(InstructionSize);
-    if (nop_arr)
+    for (uint32_t i = 0; i < InstructionSize; i++)
     {
-        memset((void *) nop_arr, 0x90, InstructionSize);
-        sys_proc_write((void *) FunctionPtr, nop_arr, InstructionSize);
-        free(nop_arr);
+        uint8_t nop_ = 0x90;
+        sys_proc_write((void *) (FunctionPtr + i), &nop_, sizeof(nop_));
     }
     Detour_WriteJump32(This, (void *) FunctionPtr, (uint64_t) This->TrampolinePtr);
 
